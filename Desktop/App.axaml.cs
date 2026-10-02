@@ -6,7 +6,7 @@ using Desktop.Views;
 
 namespace Desktop;
 
-public partial class App : Application
+public partial class App : Avalonia.Application
 {
     public override void Initialize()
     {
