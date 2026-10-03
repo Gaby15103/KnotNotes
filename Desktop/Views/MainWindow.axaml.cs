@@ -12,29 +12,22 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
-    private async void OnBrowseFolderClick(object? sender, RoutedEventArgs e)
+    private async void OnBrowseNewCategoryFolderClick(object? sender, RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
+        if (topLevel == null) return;
 
-        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Select KnotNotes Courses Workspace",
-            AllowMultiple = false,
+            Title = "Select Category Workspace Folder",
+            AllowMultiple = false
         });
 
-        if (folders.Count > 0)
+        if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } localPath)
         {
-            var folder = folders[0];
-            string? localPath = folder.TryGetLocalPath();
-            if (!string.IsNullOrEmpty(localPath) && DataContext is MainViewModel vm)
+            if (DataContext is MainViewModel viewModel)
             {
-                vm.RootDirectoryPath = localPath;
-
-                if (vm.LoadWorkspaceCommand.CanExecute(null))
-                {
-                    vm.LoadWorkspaceCommand.Execute(null);
-                }
+                viewModel.NewCategoryPath = localPath;
             }
         }
     }

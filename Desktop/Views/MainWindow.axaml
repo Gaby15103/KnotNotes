@@ -8,6 +8,7 @@
         mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
         x:Class="Desktop.Views.MainWindow"
         x:DataType="viewModels:MainViewModel"
+        x:Name="RootWindow"
         Icon="/Assets/avalonia-logo.ico"
         Title="KnotNotes - Local Knowledge Graph">
 
@@ -15,98 +16,162 @@
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto, *" ColumnDefinitions="300, *">
+    <Grid RowDefinitions="Auto, *">
         
         <!-- Top Bar: Folder Selection -->
-        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="15" Margin="10" VerticalAlignment="Center">
-            <Button Content="📁 Browse Course Folder..." 
-                    Click="OnBrowseFolderClick" 
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" Margin="10" VerticalAlignment="Center">
+            <TextBlock Text="Category Filter:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            <ComboBox ItemsSource="{Binding Categories}"
+                      SelectedItem="{Binding SelectedCategory}"
+                      Width="150">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Button Content="⚙️ Manage Categories / Settings" 
+                    Command="{Binding ToggleSettingsCommand}" 
                     Padding="10,6"/>
-            <TextBlock Text="{Binding RootDirectoryPath}" 
-                       VerticalAlignment="Center" 
-                       Foreground="DarkGray" 
-                       FontStyle="Italic" />
         </StackPanel>
 
-        <!-- Left Sidebar: Note List -->
-        <Border Grid.Row="1" Grid.Column="0" BorderBrush="#333333" BorderThickness="0,0,1,0" Margin="0,5,0,0">
-            <DockPanel>
-                <TextBlock Text="Workspace Notes" FontWeight="Bold" Margin="10" DockPanel.Dock="Top"/>
-                <ListBox ItemsSource="{Binding AllNotes}"
-                         SelectedItem="{Binding SelectedNote}"
-                         Margin="5">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding FilePath}" FontSize="10" Foreground="Gray" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-        </Border>
+        <Grid Grid.Row="1">
+            
+            <!-- VIEW A: Notes Explorer Workspace -->
+            <Grid ColumnDefinitions="300, *" IsVisible="{Binding !IsSettingsOpen}">
+                
+                <!-- Left Sidebar: Note List -->
+                <Border Grid.Column="0" BorderBrush="#333333" BorderThickness="0,0,1,0" Margin="0,5,0,0">
+                    <DockPanel>
+                        <TextBlock Text="Workspace Notes" FontWeight="Bold" Margin="10" DockPanel.Dock="Top"/>
+                        <ListBox ItemsSource="{Binding AllNotes}"
+                                 SelectedItem="{Binding SelectedNote}"
+                                 Margin="5">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding FilePath}" FontSize="10" Foreground="Gray" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
 
-        <!-- Right Pane: Note Content / Preview Area -->
-        <!-- Right Pane: Note Content / Preview Area -->
-        <ScrollViewer Grid.Row="1" Grid.Column="1" Margin="15">
-            <ContentControl Content="{Binding SelectedNote}">
-                <ContentControl.DataTemplates>
+                <!-- Right Pane: Note Content / Preview Area -->
+                <ScrollViewer Grid.Column="1" Margin="15">
+                    <ContentControl Content="{Binding SelectedNote}">
+                        <ContentControl.DataTemplates>
+                            
+                            <!-- Template for Markdown Notes -->
+                            <DataTemplate DataType="entities:MarkdownNote">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+                                    <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="Gray" />
+                                    
+                                    <ItemsControl ItemsSource="{Binding Tags}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel ItemSpacing="5" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#333333" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="#00FFFF" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    
+                                    <Separator Margin="0,5,0,10" />
+                                    
+                                    <TextBox Text="{Binding Content}"
+                                             AcceptsReturn="True"
+                                             IsReadOnly="True"
+                                             TextWrapping="Wrap"
+                                             Background="Transparent"
+                                             BorderThickness="0" />
+                                </StackPanel>
+                            </DataTemplate>
+
+                            <!-- Template for PDF Document Nodes -->
+                            <DataTemplate DataType="entities:PdfDocumentNode">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+                                    <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="Gray" />
+                                    <Separator Margin="0,5,0,10" />
+                                    
+                                    <TextBlock Text="Extracted PDF Text:" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding ExtractedText}"
+                                             AcceptsReturn="True"
+                                             IsReadOnly="True"
+                                             TextWrapping="Wrap"
+                                             Background="Transparent"
+                                             BorderThickness="0" />
+                                </StackPanel>
+                            </DataTemplate>
+
+                        </ContentControl.DataTemplates>
+                    </ContentControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- VIEW B: Configuration & Settings Page -->
+            <ScrollViewer Margin="30" IsVisible="{Binding IsSettingsOpen}">
+                <StackPanel Spacing="20" MaxWidth="650" HorizontalAlignment="Left">
+                    <TextBlock Text="⚙️ KnotNotes Preferences &amp; Workspaces" FontSize="24" FontWeight="Bold" />
+                    <TextBlock Text="Manage your multi-category workspaces and engine options." Foreground="Gray" />
                     
-                    <!-- Template for Markdown Notes -->
-                    <DataTemplate DataType="entities:MarkdownNote">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
-                            <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="Gray" />
-                            
-                            <!-- Display Tags -->
-                            <ItemsControl ItemsSource="{Binding Tags}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel ItemSpacing="5" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#333333" CornerRadius="4" Padding="6,2">
-                                            <TextBlock Text="{Binding}" FontSize="11" Foreground="#00FFFF" />
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            
-                            <Separator Margin="0,5,0,10" />
-                            
-                            <!-- Raw Markdown Content Preview -->
-                            <TextBox Text="{Binding Content}"
-                                     AcceptsReturn="True"
-                                     IsReadOnly="True"
-                                     TextWrapping="Wrap"
-                                     Background="Transparent"
-                                     BorderThickness="0" />
-                        </StackPanel>
-                    </DataTemplate>
+                    <Separator />
 
-                    <!-- Template for PDF Document Nodes -->
-                    <DataTemplate DataType="entities:PdfDocumentNode">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
-                            <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="Gray" />
-                            <Separator Margin="0,5,0,10" />
-                            
-                            <TextBlock Text="Extracted PDF Text:" FontWeight="SemiBold" />
-                            <TextBox Text="{Binding ExtractedText}"
-                                     AcceptsReturn="True"
-                                     IsReadOnly="True"
-                                     TextWrapping="Wrap"
-                                     Background="Transparent"
-                                     BorderThickness="0" />
-                        </StackPanel>
-                    </DataTemplate>
+                    <!-- Section 1: Categories -->
+                    <TextBlock Text="Workspace Categories" FontSize="16" FontWeight="SemiBold" />
+                    <ListBox ItemsSource="{Binding Categories}" Height="130">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*, *, Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Path}" Foreground="Gray" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <Button Grid.Column="2" Content="❌" 
+                                            Command="{Binding #RootWindow.((vm:MainViewModel)DataContext).DeleteCategoryCommand}" 
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
 
-                </ContentControl.DataTemplates>
-            </ContentControl>
-        </ScrollViewer>
+                    <TextBlock Text="Add New Category:" FontWeight="SemiBold" Margin="0,5,0,0" />
+                    <TextBox Watermark="Category Name (e.g., Uni, Philo, Art, Personal)" Text="{Binding NewCategoryName}" />
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBox Watermark="Folder Path..." Text="{Binding NewCategoryPath}" Width="400" x:Name="PathInputBox"/>
+                        <Button Content="Browse..." Click="OnBrowseNewCategoryFolderClick" />
+                    </StackPanel>
 
+                    <Button Content="💾 Add Workspace Category" 
+                            Command="{Binding AddCategoryCommand}" 
+                            CommandParameter="{Binding #PathInputBox.Text}"
+                            Background="#007ACC" Foreground="White" Padding="12,8"/>
+
+                    <Separator Margin="0,10,0,10" />
+
+                    <!-- Section 2: Engine Preferences -->
+                    <TextBlock Text="Engine &amp; Parser Settings" FontSize="16" FontWeight="SemiBold" />
+                    
+                    <CheckBox Content="Enable Live File Watcher (Real-time sync with Neovim / VS Code)" 
+                              IsChecked="{Binding EnableLiveWatcher}" />
+                              
+                    <CheckBox Content="Extract embedded images from PDFs during ingestion" 
+                              IsChecked="{Binding ExtractImagesFromPdfs}" />
+                              
+                    <TextBlock Text="Changes to engine settings save automatically to your local settings.json." 
+                               FontSize="11" Foreground="Gray" FontStyle="Italic" />
+                </StackPanel>
+            </ScrollViewer>
+
+        </Grid>
     </Grid>
 </Window>

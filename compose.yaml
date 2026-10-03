@@ -1,0 +1,7 @@
+﻿services:
+  cli:
+    image: cli
+    build:
+      context: .
+      dockerfile: CLi/Dockerfile
+
