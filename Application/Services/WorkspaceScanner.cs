@@ -26,24 +26,18 @@ public class WorkspaceScanner
             string dir = Path.GetDirectoryName(pdfFile);
             if (!File.Exists($"{dir}/.KnotNotes"))
             {
-                Directory.CreateDirectory($"{dir}/.KnotNotes");
+                Directory.CreateDirectory(Path.Combine(dir, ".KnotNotes"));
             }
             
             string fileNameWithoutExt = Path.GetFileNameWithoutExtension(pdfFile).Replace(" ", "_");
-            string expectedMdCompanion = Path.Combine(dir, $".KnotNotes/{fileNameWithoutExt}.md");
+            string expectedMdCompanion = Path.Combine(dir, ".KnotNotes",$"{fileNameWithoutExt}.md");
             
-            IDocumentNode node;
 
             if (!File.Exists(expectedMdCompanion))
             {
                 var companionNote = _pdfIngestionService.ConvertPdfToMarkdown(pdfFile, dir);
-                node = companionNote;
+                graph.AddOrUpdateNode(companionNote);
             }
-            else
-            {
-                node = new PdfDocumentNode(pdfFile, "Indexed via companion note.");
-            }
-            graph.AddOrUpdateNode(node);
         }
         return graph;
     }
