@@ -7,9 +7,9 @@ public class PdfIngestionService
 {
     public MarkdownNote ConvertPdfToMarkdown(string pdfPath, string outputMarkdownDir)
     {
-        string fileName = Path.GetFileNameWithoutExtension(pdfPath);
+        string fileName = Path.GetFileNameWithoutExtension(pdfPath).Replace(" ","_");
         string assetsDir = Path.Combine(outputMarkdownDir, "assets");
-        string mdFilePath = Path.Combine(outputMarkdownDir, $"{fileName}.md");
+        string mdFilePath = Path.Combine(outputMarkdownDir, $".KnotNotes/{fileName}.md");
 
         Directory.CreateDirectory(assetsDir);
 
@@ -46,9 +46,10 @@ public class PdfIngestionService
                 }
             }
         }
+        string relativePath = Path.GetRelativePath(Path.GetDirectoryName(mdFilePath), pdfPath);
         var markdownTemplate = $"""
                                 # Course Document: {fileName}
-                                * **Source PDF:** [[pdf:{Path.GetFileName(pdfPath)}|Open Original]]
+                                * **Source PDF:** [Open Original]({relativePath})
                                 * **Imported:** {DateTime.UtcNow:yyyy-MM-dd}
 
                                 ---

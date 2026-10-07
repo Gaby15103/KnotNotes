@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewModels="clr-namespace:Desktop.ViewModels"
         xmlns:entities="clr-namespace:Domain.Entities;assembly=Domain"
+        xmlns:avaloniaPdfViewer="clr-namespace:AvaloniaPdfViewer;assembly=AvaloniaPdfViewer"
         mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
         x:Class="Desktop.Views.MainWindow"
         x:DataType="viewModels:MainViewModel"
@@ -99,19 +100,16 @@
 
                             <!-- Template for PDF Document Nodes -->
                             <DataTemplate DataType="entities:PdfDocumentNode">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="Gray" />
-                                    <Separator Margin="0,5,0,10" />
+                                <Grid RowDefinitions="Auto, Auto, Auto, *" Margin="0,0,0,20">
+                                    <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="22" FontWeight="Bold" />
+                                    <TextBlock Grid.Row="1" Text="{Binding FilePath}" FontSize="11" Foreground="Gray" Margin="0,2,0,5" />
+                                    <Separator Grid.Row="2" Margin="0,5,0,10" />
                                     
-                                    <TextBlock Text="Extracted PDF Text:" FontWeight="SemiBold" />
-                                    <TextBox Text="{Binding ExtractedText}"
-                                             AcceptsReturn="True"
-                                             IsReadOnly="True"
-                                             TextWrapping="Wrap"
-                                             Background="Transparent"
-                                             BorderThickness="0" />
-                                </StackPanel>
+                                    <!-- PDF Viewer Container with explicit height / stretch -->
+                                    <Border Grid.Row="3" BorderBrush="#444444" BorderThickness="1" CornerRadius="4" MinHeight="500">
+                                        <avaloniaPdfViewer:PdfViewer Source="{Binding FilePath}" />
+                                    </Border>
+                                </Grid>
                             </DataTemplate>
 
                         </ContentControl.DataTemplates>

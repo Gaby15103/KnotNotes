@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using System.Text.RegularExpressions;
+using Domain.Entities;
 
 namespace Application.Services;
 
@@ -23,8 +24,13 @@ public class WorkspaceScanner
         foreach (var pdfFile in pdfFiles)
         {
             string dir = Path.GetDirectoryName(pdfFile);
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(pdfFile);
-            string expectedMdCompanion = Path.Combine(dir, $"{fileNameWithoutExt}.md");
+            if (!File.Exists($"{dir}/.KnotNotes"))
+            {
+                Directory.CreateDirectory($"{dir}/.KnotNotes");
+            }
+            
+            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(pdfFile).Replace(" ", "_");
+            string expectedMdCompanion = Path.Combine(dir, $".KnotNotes/{fileNameWithoutExt}.md");
             
             IDocumentNode node;
 

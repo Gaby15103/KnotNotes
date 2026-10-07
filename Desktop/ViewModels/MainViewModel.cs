@@ -44,12 +44,14 @@ public partial class MainViewModel : ObservableObject
     {
         LoadConfiguration();
         LoadAllWorkspaces();
+        
     }
 
     [RelayCommand]
     private void LoadConfiguration()
     {
         var config = _configManager.LoadConfig();
+        _watcherService = new WorkspaceWatcherService( _graph,config);
         Categories.Clear();
         foreach (var cat in config.Categories)
         {
