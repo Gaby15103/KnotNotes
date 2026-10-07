@@ -1,5 +1,6 @@
 ﻿using Domain.Entities;
 using UglyToad.PdfPig;
+using System.Text.RegularExpressions;
 
 namespace Application.Services;
 
@@ -21,7 +22,46 @@ public class PdfIngestionService
             foreach (var page in document.GetPages())
             {
                 textBuilder.AppendLine($"## Page {page.Number}");
-                textBuilder.AppendLine(page.Text);
+                
+                var words = page.GetWords();
+                var lines = words
+                    .GroupBy(w => Math.Round(w.BoundingBox.Bottom / 4.0) * 4.0)
+                    .OrderByDescending(g => g.Key);
+
+                foreach (var line in lines)
+                {
+                    var sortedWords = line.OrderBy(w => w.BoundingBox.Left).ToList();
+                    if (IsTableRow(sortedWords))
+                    {
+                        string tableRowText = FormatTableRow(sortedWords);
+                        textBuilder.AppendLine(tableRowText);
+                        continue;
+                    }
+                    string lineText = string.Join(" ", sortedWords.Select(w => w.Text));
+                    
+                    if (string.IsNullOrEmpty(lineText)) continue;
+
+                    if (Regex.IsMatch(lineText, @"^\d+(\.\d+)*\s+[A-ZÀ-Ü]"))
+                    {
+                        textBuilder.AppendLine();
+                        string anchor = Regex.Replace(lineText.ToLower(), @"[^\w\s]", "").Replace(" ", "-");
+                        textBuilder.AppendLine($"### {lineText} {{#{anchor}}}");
+                        textBuilder.AppendLine();
+                    }
+                    else if (Regex.IsMatch(lineText, @"^\d+$") && lineText.Length <= 3)
+                    {
+                        continue;
+                    }
+                    else if (lineText.StartsWith("-") || lineText.StartsWith("•") || Regex.IsMatch(lineText, @"^\d+\)"))
+                    {
+                        string cleaned = lineText.TrimStart('-', '•', ' ').Trim();
+                        textBuilder.AppendLine($"- {cleaned}");
+                    }
+                    else
+                    {
+                        textBuilder.AppendLine(lineText);
+                    }
+                }
                 textBuilder.AppendLine();
                 
                 foreach (var image in page.GetImages())
@@ -67,5 +107,42 @@ public class PdfIngestionService
         File.WriteAllText(mdFilePath, markdownTemplate);
         
         return new MarkdownNote(mdFilePath, markdownTemplate);
+    }
+    private bool IsTableRow(List<UglyToad.PdfPig.Content.Word> words)
+    {
+        if (words.Count < 3) return false;
+        int largeGaps = 0;
+        for (int i = 0; i < words.Count - 1; i++)
+        {
+            double gap = words[i + 1].BoundingBox.Left - words[i].BoundingBox.Right;
+            if (gap > 40.0)
+            {
+                largeGaps++;
+            }
+        }
+        return largeGaps >= 1;
+    }
+
+    private string FormatTableRow(List<UglyToad.PdfPig.Content.Word> words)
+    {
+        var columns = new List<string>();
+        var currentColumn = new List<string>();
+
+        for (int i = 0; i < words.Count; i++)
+        {
+            currentColumn.Add(words[i].Text);
+            if (i < words.Count - 1)
+            {
+                double gap = words[i + 1].BoundingBox.Left - words[i].BoundingBox.Right;
+                if (gap > 40.0)
+                {
+                    columns.Add(string.Join(" ", currentColumn));
+                    currentColumn.Clear();
+                }
+            }
+        }
+        columns.Add(string.Join(" ", currentColumn));
+
+        return "| " + string.Join(" | ", columns) + " |";
     }
 }

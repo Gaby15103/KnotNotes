@@ -12,7 +12,9 @@ public class WorkspaceScanner
         var graph = new KnowledgeGraph();
         if (!Directory.Exists(rootPath)) return graph;
 
-        var markdownFiles = Directory.GetFiles(rootPath, "*.md", SearchOption.AllDirectories);
+        var markdownFiles = Directory.GetFiles(rootPath, "*.md", SearchOption.AllDirectories)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         foreach (var mdFile in markdownFiles)
         {
             string content = File.ReadAllText(mdFile);
@@ -20,7 +22,9 @@ public class WorkspaceScanner
             graph.AddOrUpdateNode(note);
         }
 
-        var pdfFiles = Directory.GetFiles(rootPath, "*.pdf", SearchOption.AllDirectories);
+        var pdfFiles = Directory.GetFiles(rootPath, "*.pdf", SearchOption.AllDirectories)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         foreach (var pdfFile in pdfFiles)
         {
             string dir = Path.GetDirectoryName(pdfFile);

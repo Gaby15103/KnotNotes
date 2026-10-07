@@ -49,11 +49,39 @@ public class WorkspaceWatcherService
     {
         if (e.FullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
         {
-            string content = File.ReadAllText(e.FullPath);
-            var note = new MarkdownNote(e.FullPath, content);
-            _graph.AddOrUpdateNode(note);
-            WorkspaceChanged?.Invoke(this, EventArgs.Empty);
+            try
+            {
+                string content = ReadFileWithRetry(e.FullPath);
+                var note = new MarkdownNote(e.FullPath, content);
+                _graph.AddOrUpdateNode(note);
+                WorkspaceChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to process watcher event for {e.FullPath}: {ex.Message}");
+            }
         }
+    }
+    
+    private string ReadFileWithRetry(string filePath, int maxAttempts = 3, int delayMs = 150)
+    {
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(stream);
+                return reader.ReadToEnd();
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                Thread.Sleep(delayMs);
+            }
+        }
+        
+        using var finalStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var finalReader = new StreamReader(finalStream);
+        return finalReader.ReadToEnd();
     }
 
     private void OnFileCreated(object sender, FileSystemEventArgs e)

@@ -6,7 +6,7 @@ public class KnowledgeGraph
 
     public void AddOrUpdateNode(IDocumentNode node)
     {
-        _nodes.Add(node.FilePath, node);
+        _nodes[node.FilePath] = node;
     }
     
     public IEnumerable<IDocumentNode> GetAllNodes => _nodes.Values;
